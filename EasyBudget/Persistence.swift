@@ -1,4 +1,5 @@
 import CoreData
+import UIKit
 
 struct PersistenceController {
     static let shared = PersistenceController()
@@ -11,18 +12,23 @@ struct PersistenceController {
 
         let sampleUser = User(context: viewContext)
         sampleUser.name = "Test User"
-        sampleUser.profilePicture = "person.crop.circle"
 
-        let category = Category(context: viewContext)
-        category.name = "Food"
-        category.iconName = "fork.knife"
+        // Dodaj domyślne zdjęcie profilowe jako Data (binary)
+        if let defaultImage = UIImage(systemName: "person.circle"),
+           let imageData = defaultImage.pngData() {
+            sampleUser.profilePicture = imageData
+        }
 
-        let transaction = Transaction(context: viewContext)
-        transaction.amount = 50.0
-        transaction.date = Date()
-        transaction.note = "Lunch"
-        transaction.type = "Outcome"
-        transaction.toCategory = category
+        let sampleCategory = Category(context: viewContext)
+        sampleCategory.name = "Food"
+        sampleCategory.iconName = "fork.knife"
+
+        let sampleTransaction = Transaction(context: viewContext)
+        sampleTransaction.amount = 50.0
+        sampleTransaction.date = Date()
+        sampleTransaction.note = "Lunch"
+        sampleTransaction.type = "Outcome"
+        sampleTransaction.toCategory = sampleCategory
 
         do {
             try viewContext.save()
@@ -38,9 +44,16 @@ struct PersistenceController {
 
     init(inMemory: Bool = false) {
         container = NSPersistentContainer(name: "EasyBudget")
+
+        let description = NSPersistentStoreDescription()
+        description.shouldMigrateStoreAutomatically = true
+        description.shouldInferMappingModelAutomatically = true
+
         if inMemory {
-            container.persistentStoreDescriptions.first?.url = URL(fileURLWithPath: "/dev/null")
+            description.url = URL(fileURLWithPath: "/dev/null")
         }
+
+        container.persistentStoreDescriptions = [description]
 
         container.loadPersistentStores { (_, error) in
             if let error = error as NSError? {

@@ -7,11 +7,11 @@ struct DashboardView: View {
         animation: .default)
     private var transactions: FetchedResults<Transaction>
     
-    var totalIncome: Double {
+    var totalIncome: Float {
         transactions.filter { $0.type == "Income" }.map { $0.amount }.reduce(0, +)
     }
 
-    var totalOutcome: Double {
+    var totalOutcome: Float {
         transactions.filter { $0.type == "Outcome" }.map { $0.amount }.reduce(0, +)
     }
 

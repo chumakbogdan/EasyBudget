@@ -1,7 +1,11 @@
 import SwiftUI
 import CoreData
+import PhotosUI
 
 struct ProfileView: View {
+    @Environment(\.managedObjectContext) private var viewContext
+    @State private var selectedImage: PhotosPickerItem? = nil
+    @State private var imageData: Data? = nil
     @FetchRequest(
         sortDescriptors: [],
         animation: .default)
@@ -15,14 +19,30 @@ struct ProfileView: View {
     var body: some View {
         VStack(spacing: 16) {
             if let user = users.first {
-                Image(systemName: user.profilePicture ?? "person.crop.circle")
-                    .resizable()
-                    .frame(width: 100, height: 100)
-                    .clipShape(Circle())
-                    .onTapGesture {
-                        // Gest: Tap → wybierz zdjęcie
-                        print("Change picture")
+                PhotosPicker(
+                    selection: $selectedImage,
+                    matching: .images,
+                    photoLibrary: .shared()) {
+                        if let data = user.profilePicture, let uiImage = UIImage(data: data) {
+                            Image(uiImage: uiImage)
+                                .resizable()
+                                .frame(width: 100, height: 100)
+                                .clipShape(Circle())
+                        } else {
+                            Image(systemName: "person.circle")
+                                .resizable()
+                                .frame(width: 100, height: 100)
+                                .clipShape(Circle())
+                        }
+                }
+                .onChange(of: selectedImage) { newItem in
+                    Task {
+                        if let data = try? await newItem?.loadTransferable(type: Data.self) {
+                            user.profilePicture = data
+                            try? viewContext.save()
+                        }
                     }
+                }
 
                 TextField("Name", text: Binding(
                     get: { user.name ?? "" },
@@ -53,6 +73,24 @@ struct ProfileView: View {
             }
         }
         .navigationTitle("Profile")
+        .onAppear {
+            ensureDefaultUser()
+        }
+    }
+    
+    private func ensureDefaultUser() {
+        if users.isEmpty {
+            let newUser = User(context: viewContext)
+            newUser.name = "Jan Kowalski"
+            
+            // Ustaw domyślne zdjęcie jako dane binarne (np. z SF Symbols)
+            if let defaultImage = UIImage(systemName: "person.circle"),
+               let imageData = defaultImage.pngData() {
+                newUser.profilePicture = imageData
+            }
+
+            try? viewContext.save()
+        }
     }
 
     func deleteTransaction(at offsets: IndexSet) {

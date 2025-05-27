@@ -9,27 +9,26 @@ import SwiftUI
 import CoreData
 
 struct ContentView: View {
+
     var body: some View {
         TabView {
             DashboardView()
                 .tabItem {
                     Label("Home", systemImage: "house")
                 }
+
             ProfileView()
                 .tabItem {
                     Label("Profile", systemImage: "person.circle")
                 }
-                .tag(1)
 
-            AddTransactionView(selectedTab: $selectedTab)
+            AddTransactionView()
                 .tabItem {
                     Label("Add", systemImage: "plus.circle")
                 }
         }
-        
     }
 }
-
 #Preview {
     ContentView().environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
 }
