@@ -19,7 +19,9 @@ struct ContentView: View {
                 .tabItem {
                     Label("Profile", systemImage: "person.circle")
                 }
-            AddTransactionView()
+                .tag(1)
+
+            AddTransactionView(selectedTab: $selectedTab)
                 .tabItem {
                     Label("Add", systemImage: "plus.circle")
                 }
