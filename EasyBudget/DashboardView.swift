@@ -11,14 +11,14 @@ struct DashboardView: View {
         transactions.filter { $0.type == "Income" }.map { $0.amount }.reduce(0, +)
     }
 
-    var totalOutcome: Float {
-        transactions.filter { $0.type == "Outcome" }.map { $0.amount }.reduce(0, +)
+    var totalExpenses: Float {
+        transactions.filter { $0.type == "Expenses" }.map { $0.amount }.reduce(0, +)
     }
 
     var body: some View {
         NavigationView {
             VStack(spacing: 20) {
-                Text("Balance: \(totalIncome - totalOutcome, specifier: "%.2f")")
+                Text("Balance: \(totalIncome - totalExpenses, specifier: "%.2f")")
                     .font(.largeTitle)
                     .onLongPressGesture {
                         // Gest – długi nacisk pokazuje wykres (placeholder)
@@ -32,8 +32,8 @@ struct DashboardView: View {
                     }.padding().background(Color.green.opacity(0.2)).cornerRadius(10)
 
                     VStack {
-                        Text("Outcome")
-                        Text("\(totalOutcome, specifier: "%.2f")")
+                        Text("Expenses")
+                        Text("\(totalExpenses, specifier: "%.2f")")
                     }.padding().background(Color.red.opacity(0.2)).cornerRadius(10)
                 }
 

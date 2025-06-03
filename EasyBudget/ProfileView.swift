@@ -6,98 +6,101 @@ struct ProfileView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @State private var selectedImage: PhotosPickerItem? = nil
     @State private var imageData: Data? = nil
-    @FetchRequest(
-        sortDescriptors: [],
-        animation: .default)
+    @State private var isEditingProfile = false
+    @State private var tempUserName: String = ""
+    @State private var tempProfilePicture: Data? = nil
+    @State private var isShowingFullImage = false
+    @State private var selectedTransaction: Transaction? = nil
+    @State private var isShowingTransactionDetail = false
+    @State private var pressedTransactionId: UUID? = nil
+
+    @FetchRequest(sortDescriptors: [], animation: .default)
     private var users: FetchedResults<User>
 
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \Transaction.date, ascending: false)],
-        animation: .default)
+        animation: .default
+    )
     private var transactions: FetchedResults<Transaction>
 
     var body: some View {
-        VStack(spacing: 16) {
-            if let user = users.first {
-                PhotosPicker(
-                    selection: $selectedImage,
-                    matching: .images,
-                    photoLibrary: .shared()) {
-                        if let data = user.profilePicture, let uiImage = UIImage(data: data) {
-                            Image(uiImage: uiImage)
-                                .resizable()
-                                .frame(width: 100, height: 100)
-                                .clipShape(Circle())
-                        } else {
-                            Image(systemName: "person.circle")
-                                .resizable()
-                                .frame(width: 100, height: 100)
-                                .clipShape(Circle())
-                        }
-                }
-                .onChange(of: selectedImage) { newItem in
-                    Task {
-                        if let data = try? await newItem?.loadTransferable(type: Data.self) {
-                            user.profilePicture = data
-                            try? viewContext.save()
-                        }
-                    }
-                }
+        ZStack {
+            VStack {
+                ProfileSection(
+                    users: users,
+                    isEditingProfile: $isEditingProfile,
+                    tempUserName: $tempUserName,
+                    tempProfilePicture: $tempProfilePicture,
+                    selectedImage: $selectedImage,
+                    isShowingFullImage: $isShowingFullImage,
+                    viewContext: viewContext
+                )
 
-                TextField("Name", text: Binding(
-                    get: { user.name ?? "" },
-                    set: { user.name = $0 }
-                ))
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-                .padding(.horizontal)
+                TransactionListView(
+                    transactions: transactions,
+                    onLongPress: { tx in
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            selectedTransaction = tx
+                            pressedTransactionId = tx.id
+                            isShowingTransactionDetail = true
+                        }
+                    },
+                    pressedTransactionId: pressedTransactionId,
+                    onDelete: deleteTransaction
+                )
             }
 
-            List {
-                ForEach(transactions) { tx in
-                    HStack {
-                        VStack(alignment: .leading) {
-                            Text(tx.note ?? "No note")
-                            Text(tx.date ?? Date(), style: .date)
-                                .font(.caption)
+            if isShowingTransactionDetail, let tx = selectedTransaction {
+                TransactionDetailOverlay(
+                    transaction: tx,
+                    onClose: {
+                        withAnimation {
+                            isShowingTransactionDetail = false
+                            pressedTransactionId = nil
                         }
-                        Spacer()
-                        Text("\(tx.amount, specifier: "%.2f")")
-                            .foregroundColor(tx.type == "Income" ? .green : .red)
                     }
-                    .onLongPressGesture {
-                        // Gest: długie przytrzymanie → szczegóły
-                        print("Show transaction details")
-                    }
-                }
-                .onDelete(perform: deleteTransaction)
+                )
             }
         }
         .navigationTitle("Profile")
-        .onAppear {
-            ensureDefaultUser()
+        .onAppear(perform: ensureDefaultUser)
+        .fullScreenCover(isPresented: $isShowingFullImage) {
+            FullImageView(user: users.first, onClose: { isShowingFullImage = false })
         }
+        .overlay(
+            HStack {
+                Spacer()
+                if !isEditingProfile {
+                    Button("Edit") {
+                        if let user = users.first {
+                            tempUserName = user.name ?? ""
+                            tempProfilePicture = user.profilePicture
+                            isEditingProfile = true
+                        }
+                    }
+                    .padding()
+                }
+            },
+            alignment: .topTrailing
+        )
     }
-    
+
     private func ensureDefaultUser() {
-        if users.isEmpty {
-            let newUser = User(context: viewContext)
-            newUser.name = "Jan Kowalski"
-            
-            // Ustaw domyślne zdjęcie jako dane binarne (np. z SF Symbols)
-            if let defaultImage = UIImage(systemName: "person.circle"),
-               let imageData = defaultImage.pngData() {
-                newUser.profilePicture = imageData
-            }
-
-            try? viewContext.save()
+        guard users.isEmpty else { return }
+        let newUser = User(context: viewContext)
+        newUser.name = "Jan Kowalski"
+        if let defaultImage = UIImage(systemName: "person.circle"),
+           let imageData = defaultImage.pngData() {
+            newUser.profilePicture = imageData
         }
+        try? viewContext.save()
     }
 
-    func deleteTransaction(at offsets: IndexSet) {
+    private func deleteTransaction(at offsets: IndexSet) {
         for index in offsets {
             let tx = transactions[index]
-            PersistenceController.shared.container.viewContext.delete(tx)
+            viewContext.delete(tx)
         }
-        try? PersistenceController.shared.container.viewContext.save()
+        try? viewContext.save()
     }
 }

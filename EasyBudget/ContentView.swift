@@ -1,10 +1,3 @@
-//
-//  ContentView.swift
-//  EasyBudget
-//
-//  Created by Bogdan Chumak on 20/05/2025.
-//
-
 import SwiftUI
 import CoreData
 
@@ -16,15 +9,15 @@ struct ContentView: View {
                 .tabItem {
                     Label("Home", systemImage: "house")
                 }
+            
+            AddTransactionView()
+                .tabItem {
+                    Label("Add", systemImage: "plus.circle")
+                }
 
             ProfileView()
                 .tabItem {
                     Label("Profile", systemImage: "person.circle")
-                }
-
-            AddTransactionView()
-                .tabItem {
-                    Label("Add", systemImage: "plus.circle")
                 }
         }
     }

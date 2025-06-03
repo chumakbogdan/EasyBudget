@@ -1,11 +1,6 @@
 import SwiftUI
 import UIKit
 
-extension UIApplication {
-    func endEditing() {
-        sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-    }
-}
 
 struct AddTransactionView: View {
     @Environment(\.managedObjectContext) private var viewContext
@@ -29,7 +24,7 @@ struct AddTransactionView: View {
             Section {
                 Picker("Type", selection: $type) {
                     Text("Income").tag("Income")
-                    Text("Outcome").tag("Outcome")
+                    Text("Expenses").tag("Expenses")
                 }
                 .pickerStyle(.segmented)
 
@@ -58,6 +53,7 @@ struct AddTransactionView: View {
 
                 Button("Save") {
                     let tx = Transaction(context: viewContext)
+                    tx.id = UUID()
                     let normalizedAmount = amount.replacingOccurrences(of: ",", with: ".")
                     tx.amount = Float(normalizedAmount) ?? 0.0
                     tx.date = date
@@ -75,17 +71,12 @@ struct AddTransactionView: View {
                     try? viewContext.save()
                     amount = ""
                     note = ""
-                    type = "Income"
-                    date = Date()
                     selectedCategory = nil
-                    isAddingNewCategory = false
+                    isAddingNewCategory = true
                     newCategoryName = ""
                 }
             }
         }
-        .background(Color.clear.onTapGesture {
-            UIApplication.shared.endEditing()
-        })
         .navigationTitle("Add Transaction")
     }
 }
