@@ -19,6 +19,9 @@ struct AddTransactionView: View {
     @State private var isAddingNewCategory: Bool = true
     @State private var newCategoryName: String = ""
 
+    @State private var showAlert = false
+    @State private var alertMessage = ""
+
     var body: some View {
         Form {
             Section {
@@ -52,10 +55,40 @@ struct AddTransactionView: View {
                 }
 
                 Button("Save") {
+                    // Validate amount
+                    let normalizedAmount = amount.replacingOccurrences(of: ",", with: ".")
+                    guard let floatAmount = Float(normalizedAmount), floatAmount > 0 else {
+                        alertMessage = "Please enter a valid amount."
+                        showAlert = true
+                        return
+                    }
+
+                    // Validate note
+                    guard !note.trimmingCharacters(in: .whitespaces).isEmpty else {
+                        alertMessage = "Note cannot be empty."
+                        showAlert = true
+                        return
+                    }
+
+                    // Validate new category name if needed
+                    if isAddingNewCategory {
+                        let trimmedName = newCategoryName.trimmingCharacters(in: .whitespaces)
+                        guard !trimmedName.isEmpty else {
+                            alertMessage = "Category name cannot be empty."
+                            showAlert = true
+                            return
+                        }
+
+                        if categories.contains(where: { $0.name?.lowercased() == trimmedName.lowercased() }) {
+                            alertMessage = "This category already exists."
+                            showAlert = true
+                            return
+                        }
+                    }
+
                     let tx = Transaction(context: viewContext)
                     tx.id = UUID()
-                    let normalizedAmount = amount.replacingOccurrences(of: ",", with: ".")
-                    tx.amount = Float(normalizedAmount) ?? 0.0
+                    tx.amount = floatAmount
                     tx.date = date
                     tx.note = note
                     tx.type = type
@@ -78,5 +111,8 @@ struct AddTransactionView: View {
             }
         }
         .navigationTitle("Add Transaction")
+        .alert(isPresented: $showAlert) {
+            Alert(title: Text("Validation Error"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
+        }
     }
 }

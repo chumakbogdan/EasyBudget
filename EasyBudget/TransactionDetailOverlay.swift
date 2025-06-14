@@ -9,7 +9,7 @@ struct TransactionDetailOverlay: View {
     var body: some View {
         VStack(spacing: 16) {
             Text("Transaction Details")
-                .font(.headline)
+                .font(.title)
                 .bold()
 
             HStack{

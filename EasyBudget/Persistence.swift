@@ -4,7 +4,6 @@ import UIKit
 struct PersistenceController {
     static let shared = PersistenceController()
 
-    // Preview do SwiftUI canvasów (np. z przykładowym użytkownikiem)
     @MainActor
     static let preview: PersistenceController = {
         let result = PersistenceController(inMemory: true)
@@ -13,7 +12,6 @@ struct PersistenceController {
         let sampleUser = User(context: viewContext)
         sampleUser.name = "Test User"
 
-        // Dodaj domyślne zdjęcie profilowe jako Data (binary)
         if let defaultImage = UIImage(systemName: "person.circle"),
            let imageData = defaultImage.pngData() {
             sampleUser.profilePicture = imageData
@@ -64,7 +62,6 @@ struct PersistenceController {
         container.viewContext.automaticallyMergesChangesFromParent = true
     }
 
-    /// Pomocnicza funkcja zapisu kontekstu
     func saveContext() {
         let context = container.viewContext
         if context.hasChanges {
