@@ -8,7 +8,6 @@ struct ProfileSection: View {
     @Binding var tempUserName: String
     @Binding var tempProfilePicture: Data?
     @Binding var selectedImage: PhotosPickerItem?
-    @Binding var isShowingFullImage: Bool
     var viewContext: NSManagedObjectContext
 
     var body: some View {
@@ -52,7 +51,6 @@ struct ProfileSection: View {
                         }
                     } else {
                         ProfileImage(user: user, isEditing: false, imageData: nil)
-                            .onTapGesture { isShowingFullImage = true }
                     }
 
                     if isEditingProfile {

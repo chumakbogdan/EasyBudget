@@ -9,7 +9,6 @@ struct ProfileView: View {
     @State private var isEditingProfile = false
     @State private var tempUserName: String = ""
     @State private var tempProfilePicture: Data? = nil
-    @State private var isShowingFullImage = false
     @State private var selectedTransaction: Transaction? = nil
     @State private var isShowingTransactionDetail = false
     @State private var pressedTransactionId: UUID? = nil
@@ -32,7 +31,6 @@ struct ProfileView: View {
                     tempUserName: $tempUserName,
                     tempProfilePicture: $tempProfilePicture,
                     selectedImage: $selectedImage,
-                    isShowingFullImage: $isShowingFullImage,
                     viewContext: viewContext
                 )
 
@@ -64,9 +62,6 @@ struct ProfileView: View {
         }
         .navigationTitle("Profile")
         .onAppear(perform: ensureDefaultUser)
-        .fullScreenCover(isPresented: $isShowingFullImage) {
-            FullImageView(user: users.first, onClose: { isShowingFullImage = false })
-        }
         .overlay(
             HStack {
                 Spacer()

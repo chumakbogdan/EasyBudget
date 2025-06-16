@@ -67,8 +67,6 @@ struct TransactionListView: View {
                             .contentShape(Rectangle())
                             .scaleEffect(pressedTransactionId == tx.id ? 0.96 : 1.0)
                             .onLongPressGesture(minimumDuration: 0.5, pressing: { _ in }) {
-                                let generator = UIImpactFeedbackGenerator(style: .heavy)
-                                generator.impactOccurred()
                                 onLongPress(tx)
                             }
                             .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
