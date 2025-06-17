@@ -10,7 +10,10 @@ struct DashboardView: View {
     @State private var selectedMonth: DateComponents? = nil
     @State private var selectedCategory: String? = nil
     @State private var selectedType: String? = nil
-    
+    @State private var selectedTransaction: Transaction? = nil
+    @State private var isShowingTransactionDetail = false
+    @State private var pressedTransactionId: UUID? = nil
+
     var availableMonths: [DateComponents] {
         let unique = Set(transactions.map { Calendar.current.dateComponents([.year, .month], from: $0.date ?? Date()) })
         return Array(unique).sorted {
@@ -46,12 +49,6 @@ struct DashboardView: View {
         filteredTransactions.filter { $0.type == "Expenses" }.map { $0.amount }.reduce(0, +)
     }
 
-    var groupedTransactions: [DateComponents: [Transaction]] {
-        Dictionary(grouping: transactions) { tx in
-            Calendar.current.dateComponents([.year, .month], from: tx.date ?? Date())
-        }
-    }
-    
     func monthYearString(from components: DateComponents) -> String {
         let date = Calendar.current.date(from: components) ?? Date()
         let formatter = DateFormatter()
@@ -68,33 +65,26 @@ struct DashboardView: View {
                         .frame(maxWidth: .infinity)
 
                     HStack {
-                        VStack(alignment: .center) {
+                        VStack {
                             Text("Income")
-                                .multilineTextAlignment(.center)
                             Text("\(totalIncome, specifier: "%.2f")")
-                                .multilineTextAlignment(.center)
                         }
                         .padding()
                         .frame(maxWidth: .infinity)
                         .background(Color.green.opacity(0.5))
                         .cornerRadius(10)
 
-                        VStack(alignment: .center) {
+                        VStack {
                             Text("Expenses")
-                                .multilineTextAlignment(.center)
                             Text("\(totalExpenses, specifier: "%.2f")")
-                                .multilineTextAlignment(.center)
                         }
                         .padding()
                         .frame(maxWidth: .infinity)
                         .background(Color.red.opacity(0.5))
                         .cornerRadius(10)
                     }
-                    .frame(maxWidth: .infinity)
                 }
-                .frame(maxWidth: .infinity)
 
-                // Filter row
                 HStack {
                     VStack {
                         Text("Month")
@@ -133,59 +123,59 @@ struct DashboardView: View {
                     .frame(maxWidth: .infinity)
                 }
 
-                if filteredTransactions.isEmpty {
-                    VStack {
-                        Spacer()
-                        Text("History is empty")
-                            .foregroundColor(.gray)
-                            .font(.title2)
-                        Spacer()
-                    }
-                    .frame(maxWidth: .infinity)
-                } else {
-                    let filteredGrouped = Dictionary(grouping: filteredTransactions) {
-                        Calendar.current.dateComponents([.year, .month], from: $0.date ?? Date())
-                    }
-
-                    List {
-                        ForEach(filteredGrouped.keys.sorted {
-                            guard let d1 = Calendar.current.date(from: $0),
-                                  let d2 = Calendar.current.date(from: $1) else { return false }
-                            return d1 > d2
-                        }, id: \.self) { key in
-                            Section(header: Text(monthYearString(from: key))
-                                .font(.title3)
-                                .fontWeight(.semibold)
-                            ) {
-                                ForEach(filteredGrouped[key] ?? []) { tx in
-                                    HStack {
-                                        VStack(alignment: .leading, spacing: 4) {
-                                            Text(tx.note?.isEmpty == false ? tx.note! : "No note")
-                                                .font(.body)
-                                            Text(tx.date ?? Date(), style: .date)
-                                                .font(.caption)
-                                                .foregroundColor(.gray)
-                                        }
-
-                                        Spacer()
-
-                                        Text(String(format: "%.2f", tx.amount))
-                                            .foregroundColor(tx.type == "Income" ? .green : .red)
-                                            .font(.body)
-                                    }
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 10)
-                                    .background(Color(.systemBackground))
-                                    .listRowInsets(EdgeInsets())
-                                }
-                            }
+                TransactionListView(
+                    transactions: filteredTransactions,
+                    pressedTransactionId: $pressedTransactionId,
+                    onLongPress: { tx in
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            selectedTransaction = tx
+                            pressedTransactionId = tx.id
+                            isShowingTransactionDetail = true
                         }
+                    },
+                    onDelete: { indexSet in
+                        let context = PersistenceController.shared.container.viewContext
+                        for index in indexSet {
+                            let tx = filteredTransactions[index]
+                            context.delete(tx)
+                        }
+                        try? context.save()
                     }
-                    .listStyle(.plain)
-                }
+                )
             }
             .padding()
             .navigationTitle("Dashboard")
+            .alert(isPresented: $isShowingTransactionDetail) {
+                Alert(
+                    title: Text("Transaction Details"),
+                    message: Text(transactionDetailText),
+                    dismissButton: .default(Text("OK")) {
+                        pressedTransactionId = nil
+                        selectedTransaction = nil
+                    }
+                )
+            }
         }
+    }
+
+    private var transactionDetailText: String {
+        guard let tx = selectedTransaction else { return "No transaction selected." }
+
+        let category = tx.toCategory?.name ?? "None"
+        let date = tx.date ?? Date()
+        let amount = String(format: "%.2f", tx.amount)
+        let type = tx.type ?? "-"
+        let note = tx.note ?? "-"
+
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+
+        return """
+        Category: \(category)
+        Date: \(formatter.string(from: date))
+        Amount: \(amount)
+        Type: \(type)
+        Note: \(note)
+        """
     }
 }

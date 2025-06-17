@@ -14,21 +14,21 @@ struct ProfileSection: View {
         VStack {
             if isEditingProfile {
                 HStack {
-                    Button("Save") {
-                        if let user = users.first {
-                            user.name = tempUserName
-                            user.profilePicture = tempProfilePicture
-                            try? viewContext.save()
-                            isEditingProfile = false
-                        }
-                    }
-                    Spacer()
                     Button("Cancel") {
                         if let user = users.first {
                             tempUserName = user.name ?? ""
                             tempProfilePicture = user.profilePicture
                             isEditingProfile = false
                             selectedImage = nil
+                        }
+                    }
+                    Spacer()
+                    Button("Save") {
+                        if let user = users.first {
+                            user.name = tempUserName
+                            user.profilePicture = tempProfilePicture
+                            try? viewContext.save()
+                            isEditingProfile = false
                         }
                     }
                 }
@@ -41,7 +41,7 @@ struct ProfileSection: View {
                         PhotosPicker(selection: $selectedImage, matching: .images) {
                             ProfileImage(user: user, isEditing: true, imageData: tempProfilePicture)
                         }
-                        .onChange(of: selectedImage) { newItem in
+                        .onChange(of: selectedImage) { _, newItem in
                             Task {
                                 if let data = try? await newItem?.loadTransferable(type: Data.self) {
                                     tempProfilePicture = data
@@ -61,8 +61,6 @@ struct ProfileSection: View {
                                 .font(.title)
                                 .fixedSize()
                                 .padding(.bottom, 4)
-                                
-                                
                             Spacer()
                         }
                         .padding(.horizontal)

@@ -19,7 +19,6 @@ struct PersistenceController {
 
         let sampleCategory = Category(context: viewContext)
         sampleCategory.name = "Food"
-        sampleCategory.iconName = "fork.knife"
 
         let sampleTransaction = Transaction(context: viewContext)
         sampleTransaction.amount = 50.0

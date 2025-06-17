@@ -1,15 +1,13 @@
 import SwiftUI
-import PhotosUI
 import CoreData
 
 struct TransactionListView: View {
-    var transactions: FetchedResults<Transaction>
-    var onLongPress: (Transaction) -> Void
-    var pressedTransactionId: UUID?
-    var onDelete: (IndexSet) -> Void
+    var transactions: [Transaction]
+    @Binding var pressedTransactionId: UUID?
+    var onLongPress: (Transaction) -> Void = { _ in }
+    var onDelete: (IndexSet) -> Void = { _ in }
 
     @State private var selectedTransaction: Transaction?
-    @State private var showEditSheet = false
 
     private var groupedTransactions: [DateComponents: [Transaction]] {
         Dictionary(grouping: transactions) { tx in
@@ -66,7 +64,7 @@ struct TransactionListView: View {
                             .background(Color(.systemBackground))
                             .contentShape(Rectangle())
                             .scaleEffect(pressedTransactionId == tx.id ? 0.96 : 1.0)
-                            .onLongPressGesture(minimumDuration: 0.5, pressing: { _ in }) {
+                            .onLongPressGesture(minimumDuration: 0.5) {
                                 onLongPress(tx)
                             }
                             .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))

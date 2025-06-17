@@ -9,9 +9,6 @@ struct ProfileView: View {
     @State private var isEditingProfile = false
     @State private var tempUserName: String = ""
     @State private var tempProfilePicture: Data? = nil
-    @State private var selectedTransaction: Transaction? = nil
-    @State private var isShowingTransactionDetail = false
-    @State private var pressedTransactionId: UUID? = nil
 
     @FetchRequest(sortDescriptors: [], animation: .default)
     private var users: FetchedResults<User>
@@ -22,9 +19,15 @@ struct ProfileView: View {
     )
     private var transactions: FetchedResults<Transaction>
 
+    @FetchRequest(
+        sortDescriptors: [NSSortDescriptor(keyPath: \Category.name, ascending: true)],
+        animation: .default
+    )
+    private var categories: FetchedResults<Category>
+
     var body: some View {
         ZStack {
-            VStack {
+            VStack(spacing: 20) {
                 ProfileSection(
                     users: users,
                     isEditingProfile: $isEditingProfile,
@@ -33,31 +36,50 @@ struct ProfileView: View {
                     selectedImage: $selectedImage,
                     viewContext: viewContext
                 )
+                if let user = users.first {
+                    VStack(spacing: 10) {
+                        VStack{
+                            HStack {
+                                VStack {
+                                    Text("\(transactions.count)")
+                                        .font(.title)
+                                        .bold()
+                                    Text("Transactions")
+                                        .font(.subheadline)
+                                }
+                                .frame(maxWidth: .infinity)
 
-                TransactionListView(
-                    transactions: transactions,
-                    onLongPress: { tx in
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            selectedTransaction = tx
-                            pressedTransactionId = tx.id
-                            isShowingTransactionDetail = true
+                                VStack {
+                                    Text("\(categories.count)")
+                                        .font(.title)
+                                        .bold()
+                                    Text("Categories")
+                                        .font(.subheadline)
+                                }
+                                .frame(maxWidth: .infinity)
+                            }
+                            VStack {
+                                if let creationDate = user.dateCreated {
+                                    Text(formattedDate(creationDate))
+                                        .font(.title3)
+                                        .bold()
+                                } else {
+                                    Text("–")
+                                        .font(.title3)
+                                        .bold()
+                                }
+                                Text("Account Created")
+                                    .font(.subheadline)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.top, 20)
                         }
-                    },
-                    pressedTransactionId: pressedTransactionId,
-                    onDelete: deleteTransaction
-                )
-            }
-
-            if isShowingTransactionDetail, let tx = selectedTransaction {
-                TransactionDetailOverlay(
-                    transaction: tx,
-                    onClose: {
-                        withAnimation {
-                            isShowingTransactionDetail = false
-                            pressedTransactionId = nil
-                        }
+                        .padding()
+                        .cornerRadius(12)
                     }
-                )
+                    .padding(.horizontal)
+                }
+                Spacer()
             }
         }
         .navigationTitle("Profile")
@@ -84,6 +106,7 @@ struct ProfileView: View {
         guard users.isEmpty else { return }
         let newUser = User(context: viewContext)
         newUser.name = "Jan Kowalski"
+        newUser.dateCreated = Date()
         if let defaultImage = UIImage(systemName: "person.circle"),
            let imageData = defaultImage.pngData() {
             newUser.profilePicture = imageData
@@ -91,11 +114,9 @@ struct ProfileView: View {
         try? viewContext.save()
     }
 
-    private func deleteTransaction(at offsets: IndexSet) {
-        for index in offsets {
-            let tx = transactions[index]
-            viewContext.delete(tx)
-        }
-        try? viewContext.save()
+    private func formattedDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        return formatter.string(from: date)
     }
 }
